@@ -11,7 +11,7 @@ var mongoDB = process.env.DB_STRING;
 mongoose.connect(mongoDB, { useNewUrlParser: true, useUnifiedTopology: true });
 var db = mongoose.connection;
 
-require("./models/AuthorModel");
+require("./models/UserModel");
 
 /* Passport authentication */
 // Pass the global passport object into the configuration function
@@ -29,7 +29,7 @@ app.use(
   cors({
     origin: "http://localhost:3000",
     credentials: true,
-    methods: ["GET", "POST"],
+    methods: ["GET", "POST", "DELETE", "PUT"],
   })
 );
 app.options("*", cors());
