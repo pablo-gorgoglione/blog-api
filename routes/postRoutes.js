@@ -13,14 +13,15 @@ function isAuthor(req, res, next) {
 //get all
 router.get("/", postController.getAll);
 //get one
-router.get("/:id", postController.getOne);
+router.get("/:idPost", postController.getOne);
 //create one
 router.post("/", isAuthor, postController.createOne);
 //delete one
-router.delete("/:id", isAuthor, postController.deleteOne);
+router.delete("/:idPost", isAuthor, postController.deleteOne);
 //update one
-router.put("/:id", isAuthor, postController.updateOne);
+router.put("/:idPost", isAuthor, postController.updateOne);
 
-router.use("/:id/comment", require("./commentRoutes"));
+router.use("/:idPost/comment", require("./commentRoutes"));
+router.use("/:idPost/like", require("./likeRoutes"));
 
 module.exports = router;

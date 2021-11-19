@@ -4,14 +4,11 @@ const ObjectId = require("mongodb").ObjectId;
 const oResponse = require("../lib/response").sendResponse;
 
 exports.createOne = (req, res, next) => {
-  //id of the post req.params
-  //id of the user req.user
-  //content  req.body
-
-  if (req.params.commentId) {
+  if (req.params.idComment) {
+    //If it is a comment of a comment
     let userCommenting = new ObjectId(req.user.id);
-    let postCommment = new ObjectId(req.params.id);
-    let parentPostCommment = new ObjectId(req.params.commentId);
+    let postCommment = new ObjectId(req.params.idPost);
+    let parentPostCommment = new ObjectId(req.params.idComment);
 
     const newComment = new Comment({
       userId: userCommenting,
@@ -29,8 +26,9 @@ exports.createOne = (req, res, next) => {
         return res.json(oResponse(0, err));
       });
   } else {
+    // If it is a comment of a post
     let userCommenting = new ObjectId(req.user.id);
-    let postCommment = new ObjectId(req.params.id);
+    let postCommment = new ObjectId(req.params.idPost);
 
     const newComment = new Comment({
       userId: userCommenting,
@@ -50,7 +48,7 @@ exports.createOne = (req, res, next) => {
 };
 
 exports.deleteOne = (req, res, next) => {
-  let id = req.params.id;
+  let id = req.params.idComment;
   Comment.findByIdAndDelete(id, (err, post) => {
     if (err) {
       res.json(oResponse(0, err));
@@ -60,9 +58,8 @@ exports.deleteOne = (req, res, next) => {
 };
 
 exports.updateOne = (req, res, next) => {
-  console.log(req.params.id);
   let commentData = req.body;
-  let id = req.params.id;
+  let id = req.params.idComment;
   Comment.findByIdAndUpdate(id, commentData, { useFindAndModify: false })
     .then((data) => {
       if (!data) {
@@ -76,8 +73,7 @@ exports.updateOne = (req, res, next) => {
 };
 
 exports.getAllForOnePost = (req, res, next) => {
-  // let post_Id = "6195e3a922a0f8e9526304d8";
-  let post_Id = req.params.id;
+  let post_Id = req.params.idPost;
   var commentSearch = new ObjectId(post_Id);
   console.log(commentSearch);
 
@@ -92,6 +88,3 @@ exports.getAllForOnePost = (req, res, next) => {
       return res.json(oResponse(0, err));
     });
 };
-
-//update
-//get all

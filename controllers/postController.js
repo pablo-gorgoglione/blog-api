@@ -3,7 +3,6 @@ const Post = require("../models/PostModel");
 const Comment = require("../models/CommentModel");
 const oResponse = require("../lib/response").sendResponse;
 const ObjectId = require("mongodb").ObjectId;
-//const { post } = require("../routes");
 
 exports.getAll = (req, res, next) => {
   Post.find()
@@ -19,12 +18,12 @@ exports.getAll = (req, res, next) => {
 };
 
 exports.getOne = (req, res, next) => {
-  let id = req.params.id;
+  let id = req.params.idPost;
   Post.findById(id)
     .then((post) => {
       if (!post) {
         return res.json(
-          oResponse(0, "the post does not exist or some problem with it")
+          oResponse(0, "post does not exist or some problem with it")
         );
       }
       return res.json(oResponse(1, "Ok", post));
@@ -56,12 +55,12 @@ exports.createOne = (req, res, next) => {
 };
 
 exports.deleteOne = (req, res, next) => {
-  let postToRemove = new ObjectId(req.params.id);
+  let postToRemove = new ObjectId(req.params.idPost);
   Comment.deleteMany({ postId: postToRemove }).catch((err) =>
     res.json(oResponse(0, err))
   );
 
-  let id = req.params.id;
+  let id = req.params.idPost;
   Post.findByIdAndRemove(id, (err, post) => {
     if (err) {
       res.json(oResponse(0, err));
@@ -72,7 +71,7 @@ exports.deleteOne = (req, res, next) => {
 
 exports.updateOne = (req, res, next) => {
   let postData = req.body;
-  let id = req.params.id;
+  let id = req.params.idPost;
 
   Post.findByIdAndUpdate(id, postData, { useFindAndModify: false })
     .then((data) => {
@@ -85,5 +84,3 @@ exports.updateOne = (req, res, next) => {
       return res.json(oResponse(0, err));
     });
 };
-
-//update? one or many ??
