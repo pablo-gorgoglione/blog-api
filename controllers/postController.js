@@ -8,12 +8,12 @@ exports.getAll = (req, res, next) => {
   Post.find()
     .then((posts) => {
       if (!posts) {
-        return res.json(oResponse(0, "there are no posts"));
+        return res.status(200).json(oResponse(1, "there are no posts"));
       }
-      return res.json(oResponse(1, "All posts", posts));
+      return res.status(200).json(oResponse(1, posts));
     })
     .catch((err) => {
-      return res.json(oResponse(0, err));
+      return res.status(500).json(oResponse(0, err));
     });
 };
 
@@ -22,14 +22,14 @@ exports.getOne = (req, res, next) => {
   Post.findById(id)
     .then((post) => {
       if (!post) {
-        return res.json(
-          oResponse(0, "post does not exist or some problem with it")
-        );
+        return res
+          .status(400)
+          .json(oResponse(0, "post does not exist or some problem with it"));
       }
-      return res.json(oResponse(1, "Ok", post));
+      return res.status(200).json(oResponse(1, post));
     })
     .catch((err) => {
-      return res.json(oResponse(0, err));
+      return res.status(500).json(oResponse(0, err));
     });
 };
 
@@ -47,25 +47,26 @@ exports.createOne = (req, res, next) => {
   newPost
     .save(newPost)
     .then((data) => {
-      return res.json(oResponse(1, "Post created successfully", data));
+      return res.status(200).json(oResponse(1, data));
     })
     .catch((err) => {
-      return res.json({ Succes: 0, err });
+      return res.status(400).json({ Succes: 0, err });
     });
 };
 
 exports.deleteOne = (req, res, next) => {
   let postToRemove = new ObjectId(req.params.idPost);
+
   Comment.deleteMany({ postId: postToRemove }).catch((err) =>
-    res.json(oResponse(0, err))
+    res.status(500).json(oResponse(0, err))
   );
 
   let id = req.params.idPost;
   Post.findByIdAndRemove(id, (err, post) => {
     if (err) {
-      res.json(oResponse(0, err));
+      res.status(500).json(oResponse(0, err));
     }
-    res.json(oResponse(1, "Removed", post));
+    res.status(200).json(oResponse(1, post));
   });
 };
 
@@ -76,11 +77,11 @@ exports.updateOne = (req, res, next) => {
   Post.findByIdAndUpdate(id, postData, { useFindAndModify: false })
     .then((data) => {
       if (!data) {
-        return res.json(oResponse(0, "Cannot update the post"));
+        return res.status(400).json(oResponse(0, "Cannot update the post"));
       }
-      return res.json(oResponse(1, "Post was updated successfully.", data));
+      return res.status(200).json(oResponse(1, data));
     })
     .catch((err) => {
-      return res.json(oResponse(0, err));
+      return res.status(500).json(oResponse(0, err));
     });
 };

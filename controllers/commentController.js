@@ -3,72 +3,80 @@ const Comment = require("../models/CommentModel");
 const ObjectId = require("mongodb").ObjectId;
 const oResponse = require("../lib/response").sendResponse;
 
-exports.createOne = (req, res, next) => {
+function createComment(userId, postId, content, commentParentId) {
+  if (commentParentId == false) {
+    const newComment = new Comment({
+      userId: userId,
+      postId: postId,
+      content: content,
+    });
+    return newComment;
+  } else {
+    const newComment = new Comment({
+      userId: userId,
+      postId: postId,
+      commentParentId: commentParentId,
+      content: content,
+    });
+    return newComment;
+  }
+}
+
+exports.createOne = async (req, res, next) => {
+  // assign the necessary ids
+  let user_id = new ObjectId(req.user.id);
+  let post_id = new ObjectId(req.params.idPost);
+  let content = req.body.content;
   if (req.params.idComment) {
     //If it is a comment of a comment
-    let userCommenting = new ObjectId(req.user.id);
-    let postCommment = new ObjectId(req.params.idPost);
-    let parentPostCommment = new ObjectId(req.params.idComment);
+    let commentParent_id = new ObjectId(req.params.idComment);
 
-    const newComment = new Comment({
-      userId: userCommenting,
-      postId: postCommment,
-      content: req.body.content,
-      commentParentId: parentPostCommment,
-    });
+    // create the comment object
+    newComment = createComment(user_id, post_id, commentParent_id, content);
 
-    newComment
-      .save(newComment)
-      .then((data) => {
-        return res.json(oResponse(1, "Created", data));
-      })
-      .catch((err) => {
-        return res.json(oResponse(0, err));
-      });
+    //save the to the DB
+    try {
+      const data = await newComment.save(newComment);
+      return res.status(200).json(oResponse(1, data));
+    } catch (err) {
+      return res.status(500).json(oResponse(0, err));
+    }
   } else {
     // If it is a comment of a post
-    let userCommenting = new ObjectId(req.user.id);
-    let postCommment = new ObjectId(req.params.idPost);
-
-    const newComment = new Comment({
-      userId: userCommenting,
-      postId: postCommment,
-      content: req.body.content,
-    });
-
-    newComment
-      .save(newComment)
-      .then((data) => {
-        return res.json(oResponse(1, "Created", data));
-      })
-      .catch((err) => {
-        return res.json(oResponse(0, err));
-      });
+    newComment = createComment(user_id, post_id, content, false);
+    try {
+      const data = await newComment.save(newComment);
+      return res.status(200).json(oResponse(1, data));
+    } catch (err) {
+      return res.status(500).json(oResponse(0, err));
+    }
   }
 };
 
 exports.deleteOne = (req, res, next) => {
   let id = req.params.idComment;
+
   Comment.findByIdAndDelete(id, (err, post) => {
     if (err) {
-      res.json(oResponse(0, err));
+      res.status(500).json(oResponse(0, err));
     }
-    res.json(oResponse(1, "Removed", post));
+    res.status(200).json(oResponse(1, post));
   });
 };
 
 exports.updateOne = (req, res, next) => {
   let commentData = req.body;
   let id = req.params.idComment;
+
   Comment.findByIdAndUpdate(id, commentData, { useFindAndModify: false })
     .then((data) => {
       if (!data) {
-        return res.json(oResponse(0, "Cannot update the post"));
+        return res.status(500).json(oResponse(0, "Cannot update the post"));
       }
-      return res.json(oResponse(1, "Comment was updated successfully", data));
+      return res.status(201).json(oResponse(1, data));
     })
     .catch((err) => {
-      return res.json(oResponse(0, err));
+      return res.status(500).json(oResponse(0, err));
     });
 };
 
@@ -80,11 +88,11 @@ exports.getAllForOnePost = (req, res, next) => {
   Comment.find({ postId: commentSearch })
     .then((data) => {
       if (!data) {
-        return res.json(oResponse(0, "No comments found"));
+        return res.status(400).json(oResponse(0, "No comments found"));
       }
-      return res.json(oResponse(1, "Ok", data));
+      return res.status(200).json(oResponse(1, data));
     })
     .catch((err) => {
-      return res.json(oResponse(0, err));
+      return res.status(500).json(oResponse(0, err));
     });
 };

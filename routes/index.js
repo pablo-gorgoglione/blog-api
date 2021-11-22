@@ -10,9 +10,3 @@ router.use(
 );
 
 module.exports = router;
-
-/* router.use(
-    "/post",
-    passport.authenticate("jwt", { session: false }),
-    require("./postRoutes")
-  ); */
