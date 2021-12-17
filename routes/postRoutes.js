@@ -11,13 +11,17 @@ function isAuthor(req, res, next) {
 //routes
 
 //get all
-router.get("/", postController.getAll);
+// router.get("/", postController.getAll);
+
 //get one
 router.get("/:idPost", postController.getOne);
+
 //create one
 router.post("/", isAuthor, postController.createOne);
+
 //delete one
 router.delete("/:idPost", isAuthor, postController.deleteOne);
+
 //update one
 router.put("/:idPost", isAuthor, postController.updateOne);
 

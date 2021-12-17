@@ -52,6 +52,7 @@ exports.login = async (req, res, next) => {
       const tokenObject = utils.issueJWT(user);
       res.status(200).json(
         sendResponse(1, {
+          username: user_name,
           token: tokenObject.token,
           experiesIn: tokenObject.expires,
         })
@@ -74,9 +75,12 @@ exports.changeUsername = async (req, res, next) => {
       return res.status(500).json(0, "cant find the user");
     }
     updateUser.username = newUsername;
-    data = await User.findByIdAndUpdate(user_id, updateUser, {
-      useFindAndModify: false,
-    });
+    data = await User.findByIdAndUpdate(
+      user_id,
+      updateUser,
+
+      { runValidators: true }
+    );
     if (!data) {
       return res
         .status(500)

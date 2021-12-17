@@ -1,5 +1,5 @@
-const router = require("express").Router({ mergeParams: true });
-const likeController = require("../controllers/likeController");
-router.post("/", likeController.upVote);
-router.delete("/", likeController.downVote);
+const router = require('express').Router({ mergeParams: true });
+const likeController = require('../controllers/likeController');
+router.post('/', likeController.like);
+router.delete('/', likeController.dislike);
 module.exports = router;

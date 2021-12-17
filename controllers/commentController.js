@@ -1,8 +1,11 @@
-const mongoose = require("mongoose");
-const Comment = require("../models/CommentModel");
-const ObjectId = require("mongodb").ObjectId;
-const oResponse = require("../lib/response").sendResponse;
+const mongoose = require('mongoose');
+const Comment = require('../models/CommentModel');
+const ObjectId = require('mongodb').ObjectId;
+const oResponse = require('../lib/response').sendResponse;
+// extra
+const User = require('../models/UserModel');
 
+// function to create the object Comment
 function createComment(userId, postId, content, commentParentId) {
   if (commentParentId == false) {
     const newComment = new Comment({
@@ -36,7 +39,7 @@ exports.createOne = async (req, res, next) => {
 
     //save the to the DB
     try {
-      const data = await newComment.save(newComment);
+      const comments = await newComment.save(newComment);
       return res.status(200).json(oResponse(1, data));
     } catch (err) {
       return res.status(500).json(oResponse(0, err));
@@ -71,7 +74,7 @@ exports.updateOne = (req, res, next) => {
   Comment.findByIdAndUpdate(id, commentData, { useFindAndModify: false })
     .then((data) => {
       if (!data) {
-        return res.status(500).json(oResponse(0, "Cannot update the post"));
+        return res.status(500).json(oResponse(0, 'Cannot update the post'));
       }
       return res.status(201).json(oResponse(1, data));
     })
@@ -83,14 +86,15 @@ exports.updateOne = (req, res, next) => {
 exports.getAllForOnePost = (req, res, next) => {
   let post_Id = req.params.idPost;
   var commentSearch = new ObjectId(post_Id);
-  console.log(commentSearch);
 
   Comment.find({ postId: commentSearch })
-    .then((data) => {
-      if (!data) {
-        return res.status(400).json(oResponse(0, "No comments found"));
+    .populate({ path: 'userId', select: 'username' })
+    .exec()
+    .then((comments) => {
+      if (!comments) {
+        return res.status(400).json(oResponse(0, 'No comments found'));
       }
-      return res.status(200).json(oResponse(1, data));
+      return res.status(200).json(oResponse(1, comments));
     })
     .catch((err) => {
       return res.status(500).json(oResponse(0, err));
