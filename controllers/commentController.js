@@ -56,15 +56,26 @@ exports.createOne = async (req, res, next) => {
   }
 };
 
-exports.deleteOne = (req, res, next) => {
+exports.deleteOne = async (req, res, next) => {
   let id = req.params.idComment;
+  let user_id = new ObjectId(req.user.id);
 
-  Comment.findByIdAndDelete(id, (err, post) => {
-    if (err) {
-      res.status(500).json(oResponse(0, err));
+  try {
+    const findComment = await Comment.findById(id);
+    if (findComment) {
+      if (findComment.userId.toString() == user_id.toString()) {
+        deletedComment = await Comment.findByIdAndDelete(id);
+        if (deletedComment) {
+          return res.status(200).json(oResponse(1, deletedComment));
+        }
+        return res.status(500).json(oResponse(0, ''));
+      }
+      return res.send(oResponse(0, 'You can only delete your comments'));
     }
-    res.status(200).json(oResponse(1, post));
-  });
+    return res.json(oResponse(0, 'Comment not found'));
+  } catch (err) {
+    return res.json(oResponse(0, err));
+  }
 };
 
 exports.updateOne = (req, res, next) => {
