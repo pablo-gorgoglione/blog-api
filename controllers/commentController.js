@@ -99,7 +99,7 @@ exports.getAllForOnePost = (req, res, next) => {
   var commentSearch = new ObjectId(post_Id);
 
   Comment.find({ postId: commentSearch })
-    .populate({ path: 'userId', select: 'username' })
+    .populate({ path: 'userId', select: 'username _id' })
     .exec()
     .then((comments) => {
       if (!comments) {

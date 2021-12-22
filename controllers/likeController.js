@@ -21,7 +21,7 @@ exports.like = async (req, res) => {
       postId: idPost,
     });
     try {
-      //search for a like in the post for the user, -- only one per user
+      //look for a user like in this post, -- only one per user
       const findLike = await Like.findOne({ userId: idUser })
         .where('postId')
         .equals(idPost);
@@ -107,7 +107,7 @@ exports.dislike = async (req, res) => {
   // Delete like for one Post == has no idcomment
   if (!req.params.idComment) {
     try {
-      //search for a like in the post for the user, -- only one per user
+      //look for a user like in this post, -- only one per user
       const findLike = await Like.findOne({ userId: idUser })
         .where('postId')
         .equals(idPost);
