@@ -1,8 +1,8 @@
-const mongoose = require("mongoose");
-const genSaltHash = require("../lib/utils").genPassword;
-const User = require("../models/UserModel");
-const utils = require("../lib/utils");
-const sendResponse = require("../lib/response").sendResponse;
+const mongoose = require('mongoose');
+const genSaltHash = require('../lib/utils').genPassword;
+const User = require('../models/UserModel');
+const utils = require('../lib/utils');
+const sendResponse = require('../lib/response').sendResponse;
 
 exports.register = async (req, res, next) => {
   const user_name = req.body.username;
@@ -12,7 +12,9 @@ exports.register = async (req, res, next) => {
   try {
     const data = await User.findOne({ username: user_name });
     if (data) {
-      return res.json(sendResponse(0, "The username is already in use"));
+      return res
+        .status(400)
+        .json(sendResponse(0, 'The username is already in use'));
     }
   } catch (err) {
     return res.status(502).json(sendResponse(0, err));
@@ -41,7 +43,7 @@ exports.login = async (req, res, next) => {
   try {
     user = await User.findOne({ username: user_name });
     if (!user) {
-      return res.status(400).json(sendResponse(0, "User does not exist"));
+      return res.status(400).json(sendResponse(0, 'User does not exist'));
     }
     const isValid = utils.validPassword(
       req.body.password,
@@ -58,7 +60,7 @@ exports.login = async (req, res, next) => {
         })
       );
     } else {
-      res.status(400).json(sendResponse(0, "Wrong user data"));
+      res.status(400).json(sendResponse(0, 'Wrong user data'));
     }
   } catch (err) {
     res.status(500).json(sendResponse(0, err));
@@ -72,7 +74,7 @@ exports.changeUsername = async (req, res, next) => {
   try {
     updateUser = await User.findOne({ _id: user_id });
     if (!updateUser) {
-      return res.status(500).json(0, "cant find the user");
+      return res.status(500).json(0, 'cant find the user');
     }
     updateUser.username = newUsername;
     data = await User.findByIdAndUpdate(
@@ -84,7 +86,7 @@ exports.changeUsername = async (req, res, next) => {
     if (!data) {
       return res
         .status(500)
-        .json(sendResponse(0, "cannot update the username"));
+        .json(sendResponse(0, 'cannot update the username'));
     }
     return res
       .status(200)
@@ -100,7 +102,7 @@ exports.changePassword = async (req, res, next) => {
   try {
     updateUser = await User.findOne({ _id: user_id });
     if (!updateUser) {
-      return res.status(500).json(0, "cant find the user");
+      return res.status(500).json(0, 'cant find the user');
     }
 
     newSaltHash = utils.genPassword(newPassword);
@@ -114,7 +116,7 @@ exports.changePassword = async (req, res, next) => {
     if (!data) {
       return res
         .status(500)
-        .json(sendResponse(0, "cannot update the password"));
+        .json(sendResponse(0, 'cannot update the password'));
     }
     return res
       .status(200)
@@ -128,7 +130,7 @@ exports.changePassword = async (req, res, next) => {
 exports.home = (req, res, next) => {
   res.status(200).json({
     success: true,
-    msg: "You are successfully authenticated to this route!",
+    msg: 'You are successfully authenticated to this route!',
     userId: req.user._id,
   });
 };
