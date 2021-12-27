@@ -1,8 +1,8 @@
-const express = require("express");
-const mongoose = require("mongoose");
-var passport = require("passport");
-const cors = require("cors");
-require("dotenv").config();
+const express = require('express');
+const mongoose = require('mongoose');
+var passport = require('passport');
+const cors = require('cors');
+require('dotenv').config();
 
 var app = express();
 
@@ -11,11 +11,11 @@ var mongoDB = process.env.DB_STRING;
 mongoose.connect(mongoDB, { useNewUrlParser: true, useUnifiedTopology: true });
 var db = mongoose.connection;
 
-require("./models/UserModel");
+require('./models/UserModel');
 
 /* Passport authentication */
 // Pass the global passport object into the configuration function
-require("./config/passport")(passport);
+require('./config/passport')(passport);
 
 // This will initialize the passport object on every request
 app.use(passport.initialize());
@@ -27,16 +27,16 @@ app.use(express.urlencoded({ extended: true }));
 /* CORS */
 app.use(
   cors({
-    origin: "http://localhost:3000",
+    origin: process.env.url,
     credentials: true,
-    methods: ["GET", "POST", "DELETE", "PUT"],
+    methods: ['GET', 'POST', 'DELETE', 'PUT'],
   })
 );
-app.options("*", cors());
+app.options('*', cors());
 
 /* Routes */
-app.use(require("./routes"));
-app.use("*", (req, res) => res.status(404).json({ error: "not found" }));
+app.use(require('./routes'));
+app.use('*', (req, res) => res.status(404).json({ error: 'not found' }));
 
 /* App */
 app.listen(process.env.PORT);
