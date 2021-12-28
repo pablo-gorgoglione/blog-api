@@ -27,7 +27,7 @@ app.use(express.urlencoded({ extended: true }));
 /* CORS */
 app.use(
   cors({
-    origin: process.env.url,
+    origin: 'https://blog-app-kappa-ten.vercel.app',
     credentials: true,
     methods: ['GET', 'POST', 'DELETE', 'PUT'],
   })

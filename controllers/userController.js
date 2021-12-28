@@ -78,16 +78,16 @@ exports.changeUsername = async (req, res, next) => {
       return res.status(500).json(sendResponse(0, 'cant find the user'));
     }
 
+    if (updateUser.username === newUsername) {
+      return res
+        .status(400)
+        .json(sendResponse(0, "That's your current username"));
+    }
     checkName = await User.findOne({ username: newUsername });
     if (checkName) {
       return res
         .status(400)
         .json(sendResponse(0, 'Username is already in use '));
-    }
-    if (updateUser.username === newUsername) {
-      return res
-        .status(400)
-        .json(sendResponse(0, "That's your current username"));
     }
 
     updateUser.username = newUsername;
