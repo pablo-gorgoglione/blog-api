@@ -56,6 +56,7 @@ exports.login = async (req, res, next) => {
         sendResponse(1, {
           username: user_name,
           token: tokenObject.token,
+          _id: user._id,
           experiesIn: tokenObject.expires,
         })
       );
