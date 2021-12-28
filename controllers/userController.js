@@ -75,8 +75,21 @@ exports.changeUsername = async (req, res, next) => {
   try {
     updateUser = await User.findOne({ _id: user_id });
     if (!updateUser) {
-      return res.status(500).json(0, 'cant find the user');
+      return res.status(500).json(sendResponse(0, 'cant find the user'));
     }
+
+    checkName = await User.findOne({ username: newUsername });
+    if (checkName) {
+      return res
+        .status(400)
+        .json(sendResponse(0, 'Username is already in use '));
+    }
+    if (updateUser.username === newUsername) {
+      return res
+        .status(400)
+        .json(sendResponse(0, "That's your current username"));
+    }
+
     updateUser.username = newUsername;
     data = await User.findByIdAndUpdate(
       user_id,
