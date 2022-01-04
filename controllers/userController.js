@@ -58,6 +58,7 @@ exports.login = async (req, res, next) => {
           token: tokenObject.token,
           _id: user._id,
           experiesIn: tokenObject.expires,
+          likedPosts: user.likedPosts,
         })
       );
     } else {
@@ -140,11 +141,30 @@ exports.changePassword = async (req, res, next) => {
   }
 };
 
-//Test for aunthenticated route.
-exports.home = (req, res, next) => {
-  res.status(200).json({
-    success: true,
-    msg: 'You are successfully authenticated to this route!',
-    userId: req.user._id,
-  });
+exports.getOne = async (req, res, next) => {
+  let user_id = req.params.idUser;
+  try {
+    user = await User.findById(user_id);
+    if (!user) {
+      return res.status(500).json(sendResponse(0, 'Cannot find the user'));
+    }
+
+    return res.status(200).json(sendResponse(1, user));
+  } catch (error) {
+    return res.status(500).json(sendResponse(0, error));
+  }
+};
+
+exports.deleteOne = async (req, res, next) => {
+  user_id = req.user.id;
+
+  user = await User.findByIdAndDelete(user_id);
+  if (!user) {
+    return res.status(500).json(sendResponse(0, 'Cannot delete the user'));
+  }
+  return res
+    .status(200)
+    .json(
+      sendResponse(1, { userDeleted: user.username + ' has been deleted' })
+    );
 };

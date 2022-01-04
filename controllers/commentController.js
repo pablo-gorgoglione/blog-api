@@ -9,14 +9,14 @@ const User = require('../models/UserModel');
 function createComment(userId, postId, content, commentParentId) {
   if (commentParentId == false) {
     const newComment = new Comment({
-      userId: userId,
+      user: userId,
       postId: postId,
       content: content,
     });
     return newComment;
   } else {
     const newComment = new Comment({
-      userId: userId,
+      user: userId,
       postId: postId,
       commentParentId: commentParentId,
       content: content,
@@ -97,17 +97,20 @@ exports.updateOne = (req, res, next) => {
 exports.getAllForOnePost = (req, res, next) => {
   let post_Id = req.params.idPost;
   var commentSearch = new ObjectId(post_Id);
-
-  Comment.find({ postId: commentSearch })
-    .populate({ path: 'userId', select: 'username _id' })
-    .exec()
-    .then((comments) => {
-      if (!comments) {
-        return res.status(400).json(oResponse(0, 'No comments found'));
-      }
-      return res.status(200).json(oResponse(1, comments));
-    })
-    .catch((err) => {
-      return res.status(500).json(oResponse(0, err));
-    });
+  try {
+    Comment.find({ postId: commentSearch })
+      .populate({ path: 'user', select: 'username _id' })
+      .exec()
+      .then((comments) => {
+        if (!comments) {
+          return res.status(400).json(oResponse(0, 'No comments found'));
+        }
+        return res.status(200).json(oResponse(1, comments));
+      })
+      .catch((err) => {
+        return res.status(500).json(oResponse(0, err));
+      });
+  } catch (error) {
+    return res.status(500).json(oResponse(0, error));
+  }
 };

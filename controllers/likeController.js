@@ -4,6 +4,7 @@ const oResponse = require('../lib/response').sendResponse;
 const ObjectId = require('mongodb').ObjectId;
 const Post = require('../models/PostModel');
 const Comment = require('../models/CommentModel');
+const User = require('../models/UserModel');
 
 //TODO: - use a transaction for create the like and update the post likeCounter
 exports.like = async (req, res) => {
@@ -11,6 +12,11 @@ exports.like = async (req, res) => {
   let idUser = new ObjectId(req.user.id);
   let idPost = new ObjectId(req.params.idPost);
   let idComment = new ObjectId(req.params.idComment);
+  if (!idUser) {
+    return res
+      .status(401)
+      .json(oResponse(0, 'You must be logged in to like it'));
+  }
 
   //userId and postId are the models ids
 
@@ -20,14 +26,15 @@ exports.like = async (req, res) => {
       userId: idUser,
       postId: idPost,
     });
+
     try {
       //look for a user like in this post, -- only one per user
-      const findLike = await Like.findOne({ userId: idUser })
+      const validateExistence = await Like.findOne({ userId: idUser })
         .where('postId')
         .equals(idPost);
 
       // if user Already has a like in the post, then he cannot like again
-      if (findLike) {
+      if (validateExistence) {
         return res.status(400).json(oResponse(0, 'Only one like per user'));
       }
 
@@ -49,9 +56,24 @@ exports.like = async (req, res) => {
         return res.status(500).json(oResponse(0, 'Cannot update the post'));
       }
 
-      return res
-        .status(200)
-        .json(oResponse(1, { likeCounter: findPost.likeCounter }));
+      //update user's likedPosts list
+      const tempUser = await User.findById(idUser);
+      if (tempUser) {
+        tempUser.likedPosts.push(findPost._id);
+      }
+      const updateUser = await User.findByIdAndUpdate(idUser, tempUser, {
+        useFindAndModify: false,
+      });
+      if (!updateUser) {
+        return res.status(500).json(oResponse(0, 'Cannot update the user'));
+      }
+
+      return res.status(200).json(
+        oResponse(1, {
+          likeCounter: findPost.likeCounter,
+          likedPosts: tempUser.likedPosts,
+        })
+      );
     } catch (err) {
       return res.status(400).json(oResponse(0, err));
     }
@@ -123,6 +145,22 @@ exports.dislike = async (req, res) => {
       if (!findPost) {
         return res.status(400).json(oResponse(0, 'post does not exist'));
       }
+
+      //update user's likedPosts list
+      const tempUser = await User.findById(idUser);
+      if (tempUser) {
+        index = tempUser.likedPosts.indexOf(findPost._id);
+        if (index > -1) {
+          tempUser.likedPosts.splice(index, 1);
+        }
+      }
+      const updateUser = await User.findByIdAndUpdate(idUser, tempUser, {
+        useFindAndModify: false,
+      });
+      if (!updateUser) {
+        return res.status(500).json(oResponse(0, 'Cannot update the user'));
+      }
+
       findPost.likeCounter = findPost.likeCounter - 1;
       const updatePost = await Post.findByIdAndUpdate(idPost, findPost, {
         useFindAndModify: false,
@@ -132,11 +170,15 @@ exports.dislike = async (req, res) => {
           .status(500)
           .json(oResponse(0, 'Cannot update the post(like)'));
       }
-      return res
-        .status(200)
-        .json(oResponse(1, { likeCounter: findPost.likeCounter }));
+
+      return res.status(200).json(
+        oResponse(1, {
+          likeCounter: findPost.likeCounter,
+          likedPost: tempUser.likedPosts,
+        })
+      );
     } catch (err) {
-      return res.status(400).json(oResponse(0, err));
+      return res.status(500).json(oResponse(0, err));
     }
   } else {
     try {

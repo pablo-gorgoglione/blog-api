@@ -1,21 +1,32 @@
-const router = require("express").Router();
-const userController = require("../controllers/userController");
-const passport = require("passport");
+const router = require('express').Router();
+const userController = require('../controllers/userController');
+const passport = require('passport');
 
-router.post("/register", userController.register);
+router.post('/register', userController.register);
 
-router.post("/login", userController.login);
+router.post('/login', userController.login);
 
 router.put(
-  "/username",
-  passport.authenticate("jwt", { session: false }),
+  '/username',
+  passport.authenticate('jwt', { session: false }),
   userController.changeUsername
 );
 
 router.put(
-  "/password",
-  passport.authenticate("jwt", { session: false }),
+  '/password',
+  passport.authenticate('jwt', { session: false }),
   userController.changePassword
+);
+router.get(
+  '/:idUser',
+  passport.authenticate('jwt', { session: false }),
+  userController.getOne
+);
+
+router.delete(
+  '/',
+  passport.authenticate('jwt', { session: false }),
+  userController.deleteOne
 );
 
 module.exports = router;

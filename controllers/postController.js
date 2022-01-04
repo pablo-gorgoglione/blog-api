@@ -1,14 +1,14 @@
-const mongoose = require("mongoose");
-const Post = require("../models/PostModel");
-const Comment = require("../models/CommentModel");
-const oResponse = require("../lib/response").sendResponse;
-const ObjectId = require("mongodb").ObjectId;
+const mongoose = require('mongoose');
+const Post = require('../models/PostModel');
+const Comment = require('../models/CommentModel');
+const oResponse = require('../lib/response').sendResponse;
+const ObjectId = require('mongodb').ObjectId;
 
 exports.getAll = (req, res, next) => {
   Post.find()
     .then((posts) => {
       if (!posts) {
-        return res.status(200).json(oResponse(1, "there are no posts"));
+        return res.status(200).json(oResponse(1, 'there are no posts'));
       }
       return res.status(200).json(oResponse(1, posts));
     })
@@ -17,20 +17,17 @@ exports.getAll = (req, res, next) => {
     });
 };
 
-exports.getOne = (req, res, next) => {
-  let id = req.params.idPost;
-  Post.findById(id)
-    .then((post) => {
-      if (!post) {
-        return res
-          .status(400)
-          .json(oResponse(0, "post does not exist or some problem with it"));
-      }
-      return res.status(200).json(oResponse(1, post));
-    })
-    .catch((err) => {
-      return res.status(500).json(oResponse(0, err));
-    });
+exports.getOne = async (req, res, next) => {
+  let idPost = req.params.idPost;
+  try {
+    post = await Post.findById(idPost);
+    if (!post) {
+      return res.status(400).json(oResponse(0, 'cannot find the post'));
+    }
+    return res.status(200).json(oResponse(1, post));
+  } catch (error) {
+    return res.status(500).json(oResponse(0, err));
+  }
 };
 
 exports.createOne = (req, res, next) => {
@@ -77,7 +74,7 @@ exports.updateOne = (req, res, next) => {
   Post.findByIdAndUpdate(id, postData, { useFindAndModify: false })
     .then((data) => {
       if (!data) {
-        return res.status(400).json(oResponse(0, "Cannot update the post"));
+        return res.status(400).json(oResponse(0, 'Cannot update the post'));
       }
       return res.status(200).json(oResponse(1, data));
     })
