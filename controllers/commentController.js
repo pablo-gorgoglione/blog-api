@@ -4,6 +4,7 @@ const ObjectId = require('mongodb').ObjectId;
 const oResponse = require('../lib/response').sendResponse;
 // extra
 const User = require('../models/UserModel');
+const Post = require('../models/PostModel');
 
 // function to create the object Comment
 function createComment(userId, postId, content, commentParentId) {
@@ -47,9 +48,28 @@ exports.createOne = async (req, res, next) => {
   } else {
     // If it is a comment of a post
     newComment = createComment(user_id, post_id, content, false);
+
     try {
+      let idPost = req.params.idPost;
       const data = await newComment.save(newComment);
-      return res.status(200).json(oResponse(1, data));
+
+      /* update post's commentCounter */
+      const findPost = await Post.findById(idPost);
+      if (!findPost) {
+        return res.status(400).json(oResponse(0, 'post does not exist'));
+      }
+      findPost.commentCounter = findPost.commentCounter + 1;
+
+      const updatePost = await Post.findByIdAndUpdate(idPost, findPost, {
+        useFindAndModify: false,
+      });
+      if (!updatePost) {
+        return res.status(500).json(oResponse(0, 'Cannot update the post'));
+      }
+
+      return res
+        .status(200)
+        .json(oResponse(1, { commentCounter: updatePost.commentCounter }));
     } catch (err) {
       return res.status(500).json(oResponse(0, err));
     }
@@ -59,6 +79,7 @@ exports.createOne = async (req, res, next) => {
 exports.deleteOne = async (req, res, next) => {
   let id = req.params.idComment;
   let user_id = new ObjectId(req.user.id);
+  let idPost = req.params.idPost;
 
   try {
     const findComment = await Comment.findById(id);
@@ -66,7 +87,23 @@ exports.deleteOne = async (req, res, next) => {
       if (findComment.user.toString() == user_id.toString()) {
         deletedComment = await Comment.findByIdAndDelete(id);
         if (deletedComment) {
-          return res.status(200).json(oResponse(1, deletedComment));
+          /* update post's commentCounter */
+          const findPost = await Post.findById(idPost);
+          if (!findPost) {
+            return res.status(400).json(oResponse(0, 'post does not exist'));
+          }
+          findPost.commentCounter = findPost.commentCounter - 1;
+          const updatePost = await Post.findByIdAndUpdate(idPost, findPost, {
+            useFindAndModify: false,
+          });
+
+          if (!updatePost) {
+            return res.status(500).json(oResponse(0, 'Cannot update the post'));
+          }
+
+          return res
+            .status(200)
+            .json(oResponse(1, { commentCounter: updatePost.commentCounter }));
         }
         return res.status(500).json(oResponse(0, ''));
       }

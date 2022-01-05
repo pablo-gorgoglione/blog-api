@@ -13,6 +13,7 @@ const PostSchema = mongoose.Schema({
     require: [true, 'A post status is required'],
   },
   likeCounter: { type: Number, default: 0 },
+  commentCounter: { type: Number, default: 0 },
 });
 
 module.exports = mongoose.model('Post', PostSchema);
