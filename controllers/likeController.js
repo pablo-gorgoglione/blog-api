@@ -29,10 +29,11 @@ exports.like = async (req, res) => {
 
     try {
       //look for a user like in this post, -- only one per user
-      const validateExistence = await Like.findOne({ userId: idUser })
-        .where('postId')
-        .equals(idPost);
-
+      const validateExistence = await Like.findOne({
+        userId: idUser,
+        postId: idPost,
+        commentId: { $exists: false },
+      });
       // if user Already has a like in the post, then he cannot like again
       if (validateExistence) {
         return res.status(400).json(oResponse(0, 'Only one like per user'));
@@ -86,14 +87,16 @@ exports.like = async (req, res) => {
     });
 
     try {
-      const findLike = await Like.findOne({ userId: idUser })
-        .where('postId')
-        .equals(idPost)
-        .where('commentId')
-        .equals(idComment);
+      const findLike = await Like.findOne({
+        userId: idUser,
+        postId: idPost,
+        commentId: idComment,
+      });
+
       if (findLike) {
         return res.status(400).json(oResponse(0, 'Only one like per user'));
       }
+      /* update the like counter */
       const newLike = await objLike.save(objLike);
 
       const findComment = await Comment.findById(idComment);
@@ -109,9 +112,24 @@ exports.like = async (req, res) => {
       if (!updateComment) {
         return res.status(500).json(oResponse(0, 'Cannot update the comment'));
       }
-      return res
-        .status(200)
-        .json(oResponse(1, { likeCounter: findComment.likeCounter }));
+      /* update the user likedPost array */
+      const tempUser = await User.findById(idUser);
+      if (tempUser) {
+        tempUser.likedComments.push(findComment._id);
+      }
+      const updateUser = await User.findByIdAndUpdate(idUser, tempUser, {
+        useFindAndModify: false,
+      });
+      if (!updateUser) {
+        return res.status(500).json(oResponse(0, 'Cannot update the user'));
+      }
+
+      return res.status(200).json(
+        oResponse(1, {
+          likeCounter: findComment.likeCounter,
+          likedComments: tempUser.likedComments,
+        })
+      );
     } catch (err) {
       return res.status(400).json(oResponse(0, err));
     }
@@ -146,6 +164,16 @@ exports.dislike = async (req, res) => {
         return res.status(400).json(oResponse(0, 'post does not exist'));
       }
 
+      findPost.likeCounter = findPost.likeCounter - 1;
+      const updatePost = await Post.findByIdAndUpdate(idPost, findPost, {
+        useFindAndModify: false,
+      });
+      if (!updatePost) {
+        return res
+          .status(500)
+          .json(oResponse(0, 'Cannot update the post(like)'));
+      }
+
       //update user's likedPosts list
       const tempUser = await User.findById(idUser);
       if (tempUser) {
@@ -160,21 +188,10 @@ exports.dislike = async (req, res) => {
       if (!updateUser) {
         return res.status(500).json(oResponse(0, 'Cannot update the user'));
       }
-
-      findPost.likeCounter = findPost.likeCounter - 1;
-      const updatePost = await Post.findByIdAndUpdate(idPost, findPost, {
-        useFindAndModify: false,
-      });
-      if (!updatePost) {
-        return res
-          .status(500)
-          .json(oResponse(0, 'Cannot update the post(like)'));
-      }
-
       return res.status(200).json(
         oResponse(1, {
           likeCounter: findPost.likeCounter,
-          likedPost: tempUser.likedPosts,
+          likedPosts: tempUser.likedPosts,
         })
       );
     } catch (err) {
@@ -189,6 +206,8 @@ exports.dislike = async (req, res) => {
         .where('commentId')
         .equals(idComment);
       if (!findLike) {
+        // intentar borrar likedComments y likeCounter con esta informacion, si es que se
+        //bugea
         return res
           .status(400)
           .json(oResponse(0, "Can't downvote if you didn't upvote"));
@@ -198,6 +217,7 @@ exports.dislike = async (req, res) => {
       if (!findComment) {
         return res.status(400).json(oResponse(0, 'comment does not exist'));
       }
+
       findComment.likeCounter = findComment.likeCounter - 1;
       const updateComment = await Comment.findByIdAndUpdate(
         idComment,
@@ -209,9 +229,29 @@ exports.dislike = async (req, res) => {
           .status(500)
           .json(oResponse(0, 'Cannot update the comment(like)'));
       }
-      return res
-        .status(200)
-        .json(oResponse(1, { likeCounter: findComment.likeCounter }));
+
+      /* update user's likedPosts array */
+      const tempUser = await User.findById(idUser);
+      if (tempUser) {
+        index = tempUser.likedComments.indexOf(findComment._id);
+        if (index > -1) {
+          tempUser.likedComments.splice(index, 1);
+        }
+      }
+
+      const updateUser = await User.findByIdAndUpdate(idUser, tempUser, {
+        useFindAndModify: false,
+      });
+      if (!updateUser) {
+        return res.status(500).json(oResponse(0, 'Cannot update the user'));
+      }
+
+      return res.status(200).json(
+        oResponse(1, {
+          likeCounter: findComment.likeCounter,
+          likedComments: tempUser.likedComments,
+        })
+      );
     } catch (err) {
       return res.status(400).json(oResponse(0, err));
     }
