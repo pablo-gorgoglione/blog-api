@@ -63,7 +63,7 @@ exports.deleteOne = async (req, res, next) => {
   try {
     const findComment = await Comment.findById(id);
     if (findComment) {
-      if (findComment.userId.toString() == user_id.toString()) {
+      if (findComment.user.toString() == user_id.toString()) {
         deletedComment = await Comment.findByIdAndDelete(id);
         if (deletedComment) {
           return res.status(200).json(oResponse(1, deletedComment));
