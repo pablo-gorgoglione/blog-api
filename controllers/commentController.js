@@ -135,9 +135,15 @@ exports.getAllForOnePost = (req, res, next) => {
   let post_Id = req.params.idPost;
   var commentSearch = new ObjectId(post_Id);
   try {
-    Comment.find({ postId: commentSearch })
-      .populate({ path: 'user', select: 'username _id' })
-      .exec()
+    let query = Comment.find({ postId: commentSearch })
+      .sort({ date: 'desc' })
+      .populate({
+        path: 'user',
+        select: 'username _id',
+      });
+    let promise = query.exec();
+
+    promise
       .then((comments) => {
         if (!comments) {
           return res.status(400).json(oResponse(0, 'No comments found'));
