@@ -155,7 +155,7 @@ exports.dislike = async (req, res) => {
       // if user Already has a like in the post, then he cannot like again
       if (!findLike) {
         return res
-          .status(400)
+          .status(404)
           .json(oResponse(0, "Can't downvote if you didn't upvote"));
       }
       await Like.findByIdAndDelete(findLike._id);
@@ -209,7 +209,7 @@ exports.dislike = async (req, res) => {
         // intentar borrar likedComments y likeCounter con esta informacion, si es que se
         //bugea
         return res
-          .status(400)
+          .status(404)
           .json(oResponse(0, "Can't downvote if you didn't upvote"));
       }
       await Like.findByIdAndDelete(findLike._id);

@@ -18,7 +18,7 @@ router.put(
   userController.changePassword
 );
 router.get(
-  '/:idUser',
+  '/',
   passport.authenticate('jwt', { session: false }),
   userController.getOne
 );

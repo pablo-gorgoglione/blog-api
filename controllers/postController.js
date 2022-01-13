@@ -8,7 +8,7 @@ exports.getAll = (req, res, next) => {
   Post.find()
     .then((posts) => {
       if (!posts) {
-        return res.status(200).json(oResponse(1, 'there are no posts'));
+        return res.status(400).json(oResponse(1, 'there are no posts'));
       }
       return res.status(200).json(oResponse(1, posts));
     })
@@ -16,7 +16,6 @@ exports.getAll = (req, res, next) => {
       return res.status(500).json(oResponse(0, err));
     });
 };
-
 exports.getOne = async (req, res, next) => {
   let idPost = req.params.idPost;
   try {

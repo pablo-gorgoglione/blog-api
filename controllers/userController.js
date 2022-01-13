@@ -142,9 +142,10 @@ exports.changePassword = async (req, res, next) => {
 };
 
 exports.getOne = async (req, res, next) => {
-  let user_id = req.params.idUser;
+  // let user_id = req.params.idUser; // ????? is in the req.user
+  const user_id = req.user.id;
   try {
-    user = await User.findById(user_id);
+    user = await User.findById(user_id).select(['-hash', '-salt']);
     if (!user) {
       return res.status(500).json(sendResponse(0, 'Cannot find the user'));
     }
