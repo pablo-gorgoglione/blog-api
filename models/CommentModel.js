@@ -12,7 +12,7 @@ const CommentSchema = Schema({
   },
   content: {
     type: String,
-    require: [true, 'A content is required in the comment'],
+    required: [true, 'A content is required in the comment'],
   },
   date: { type: Date, default: Date.now() },
   isEdited: { type: Number, default: 0 },

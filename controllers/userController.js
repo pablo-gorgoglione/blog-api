@@ -1,38 +1,35 @@
 const mongoose = require('mongoose');
-const genSaltHash = require('../lib/utils').genPassword;
 const User = require('../models/UserModel');
+const genSaltHash = require('../lib/utils').genPassword;
 const utils = require('../lib/utils');
 const sendResponse = require('../lib/response').sendResponse;
 
 exports.register = async (req, res, next) => {
-  const user_name = req.body.username;
-  if (!user_name) {
-    return res.status(400).json(sendResponse(0, "Username can't be empty"));
-  }
   try {
+    const user_name = req.body.username;
+    if (!user_name) {
+      return res.status(400).json(sendResponse(0, "Username can't be empty"));
+    }
+
     const data = await User.findOne({ username: user_name });
     if (data) {
       return res
         .status(400)
         .json(sendResponse(0, 'The username is already in use'));
     }
-  } catch (err) {
-    return res.status(502).json(sendResponse(0, err));
-  }
 
-  saltHash = genSaltHash(req.body.password);
+    saltHash = genSaltHash(req.body.password);
 
-  const newUser = new User({
-    role: req.body.role,
-    username: req.body.username,
-    dateJoined: Date.now(),
-    hash: saltHash.hash,
-    salt: saltHash.salt,
-  });
+    const newUser = new User({
+      username: req.body.username,
+      hash: saltHash.hash,
+      salt: saltHash.salt,
+      dateJoined: Date.now(),
+      role: req.body.role,
+    });
 
-  try {
     user = await newUser.save();
-    res.status(200).json(sendResponse(1, { user: user }));
+    res.status(201).json(sendResponse(1, user));
   } catch (err) {
     res.status(500).json(sendResponse(0, err));
   }

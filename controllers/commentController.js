@@ -68,10 +68,10 @@ exports.createOne = async (req, res, next) => {
       }
 
       return res
-        .status(200)
+        .status(201)
         .json(oResponse(1, { commentCounter: updatePost.commentCounter }));
     } catch (err) {
-      return res.status(500).json(oResponse(0, err));
+      return res.status(400).json(oResponse(0, err));
     }
   }
 };

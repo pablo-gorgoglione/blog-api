@@ -6,7 +6,7 @@ const UserSchema = mongoose.Schema({
   role: { type: Number },
   username: {
     type: String,
-    require: [true, 'A username is required'],
+    required: [true, 'A username is required'],
     minlength: 4,
   },
   likedPosts: [{ type: Schema.Types.ObjectId, ref: 'Post' }],

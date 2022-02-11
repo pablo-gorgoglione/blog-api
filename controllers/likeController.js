@@ -36,6 +36,7 @@ exports.like = async (req, res) => {
       });
       // if user Already has a like in the post, then he cannot like again
       if (validateExistence) {
+        await Like.findByIdAndDelete(validateExistence._id);
         return res.status(400).json(oResponse(0, 'Only one like per user'));
       }
 
@@ -69,7 +70,7 @@ exports.like = async (req, res) => {
         return res.status(500).json(oResponse(0, 'Cannot update the user'));
       }
 
-      return res.status(200).json(
+      return res.status(201).json(
         oResponse(1, {
           likeCounter: findPost.likeCounter,
           likedPosts: tempUser.likedPosts,
@@ -124,7 +125,7 @@ exports.like = async (req, res) => {
         return res.status(500).json(oResponse(0, 'Cannot update the user'));
       }
 
-      return res.status(200).json(
+      return res.status(201).json(
         oResponse(1, {
           likeCounter: findComment.likeCounter,
           likedComments: tempUser.likedComments,
