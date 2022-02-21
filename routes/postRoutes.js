@@ -1,27 +1,9 @@
-const router = require('express').Router();
-const routerNoAuth = require('express').Router();
+const router = require('express').Router({ mergeParams: true });
 const postController = require('../controllers/postController');
+const commentController = require('../controllers/commentController');
 
-//middleware to see if the current user is author or not
-function isAuthor(req, res, next) {
-  if (req.user.role === 0) {
-    res.json({ message: 'You are not authorized' });
-  }
-  next();
-}
-
-/* routes with required authentication */
-
-//create one
-router.post('/', isAuthor, postController.createOne);
-
-//delete one
-router.delete('/:idPost', isAuthor, postController.deleteOne);
-
-//update one
-router.put('/:idPost', isAuthor, postController.updateOne);
-
-router.use('/:idPost/comment', require('./commentRoutes'));
-router.use('/:idPost/like', require('./likeRoutes'));
+router.get('/', postController.getAll);
+router.get('/:idPost/comment', commentController.getAllForOnePost);
+router.get('/:idPost', postController.getOne);
 
 module.exports = router;
