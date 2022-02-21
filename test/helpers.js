@@ -4,8 +4,8 @@ const initialPosts = [
     title: 'this is new data',
     content: 'this is a test one',
     tags: ['test1', 'testIntegration'],
-    isPublished: 0,
-    likeCounter: 5,
+    isPublished: 1,
+    likeCounter: 0,
     commentCounter: 0,
   },
   {
@@ -13,8 +13,8 @@ const initialPosts = [
     title: 'test number two',
     content: 'this is a test two',
     tags: ['test2', 'testIntegration'],
-    isPublished: 0,
-    likeCounter: 5,
+    isPublished: 1,
+    likeCounter: 0,
     commentCounter: 0,
   },
 ];
@@ -22,6 +22,7 @@ const initialPosts = [
 const testUser = {
   username: 'pablo-test',
   password: '123456',
+  role: '1',
 };
 
 module.exports = { initialPosts, testUser };
