@@ -5,17 +5,26 @@ const Comment = require('../models/CommentModel');
 const oResponse = require('../lib/response').sendResponse;
 const ObjectId = require('mongodb').ObjectId;
 
-exports.getAll = (req, res, next) => {
-  Post.find({})
-    .then((posts) => {
-      if (!posts) {
-        return res.status(400).json(oResponse(1, 'there are no posts'));
-      }
-      return res.status(200).json(oResponse(1, posts));
-    })
-    .catch((err) => {
-      return res.status(500).json(oResponse(0, err));
-    });
+exports.getAll = async (req, res, next) => {
+  try {
+    posts = await Post.find({ isPublished: 1 })
+      .sort({ datePublished: 'desc' })
+      .exec();
+    return res.status(200).json(oResponse(1, posts));
+  } catch (error) {
+    return res.status(500).json(oResponse(0, err));
+  }
+};
+
+exports.getAllNotPublished = async (req, res, next) => {
+  try {
+    posts = await Post.find({ isPublished: 0 })
+      .sort({ datePublished: 'desc' })
+      .exec();
+    return res.status(200).json(oResponse(1, posts));
+  } catch (error) {
+    return res.status(500).json(oResponse(0, { ...error }));
+  }
 };
 
 exports.getOne = async (req, res, next) => {
@@ -27,7 +36,7 @@ exports.getOne = async (req, res, next) => {
     }
     return res.status(200).json(oResponse(1, post));
   } catch (error) {
-    return res.status(500).json(oResponse(0, err));
+    return res.status(500).json(oResponse(0, error));
   }
 };
 
@@ -37,7 +46,6 @@ exports.createOne = async (req, res, next) => {
     if (!findUser) {
       return res.status(400).json(oResponse(0, 'User author not found'));
     }
-
     const newPost = new Post({
       authorId: findUser._id,
       title: req.body.title,
@@ -53,38 +61,50 @@ exports.createOne = async (req, res, next) => {
       return res.status(400).json({ error: error });
     }
   } catch (error) {
-    return res.status(500).json({ error: error });
+    return res.status(500).json(oResponse(0, error));
   }
 };
 
-exports.deleteOne = (req, res, next) => {
-  let postToRemove = new ObjectId(req.params.idPost);
+exports.deleteOne = async (req, res, next) => {
+  const idPost = req.params.idPost;
 
-  Comment.deleteMany({ postId: postToRemove }).catch((err) =>
-    res.status(500).json(oResponse(0, err))
-  );
+  //START TRANSACTION
+  const session = await mongoose.startSession();
+  session.startTransaction();
+  try {
+    // DELETE COMMENTS AND POST
+    await Comment.deleteMany({ postId: idPost }).session(session);
+    await Post.findByIdAndRemove(idPost).session(session);
 
-  let id = req.params.idPost;
-  Post.findByIdAndRemove(id, (err, post) => {
-    if (err) {
-      res.status(500).json(oResponse(0, err));
-    }
-    res.status(200).json(oResponse(1, post));
-  });
+    // COMMIT TRANSACTION
+    await session.commitTransaction();
+    session.endSession();
+    return res.status(200).json(oResponse(1, 'Post deleted'));
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    return res.status(400).json(oResponse(0, error));
+  }
 };
 
-exports.updateOne = (req, res, next) => {
-  let postData = req.body;
-  let id = req.params.idPost;
+exports.updateOne = async (req, res, next) => {
+  let post = req.body;
+  const idPost = req.params.idPost;
 
-  Post.findByIdAndUpdate(id, postData, { useFindAndModify: false })
-    .then((data) => {
-      if (!data) {
-        return res.status(400).json(oResponse(0, 'Cannot update the post'));
-      }
-      return res.status(200).json(oResponse(1, data));
-    })
-    .catch((err) => {
-      return res.status(500).json(oResponse(0, err));
-    });
+  //START TRANSACTION
+  const session = await mongoose.startSession();
+  session.startTransaction();
+  try {
+    const postUpdated = await Post.findByIdAndUpdate(idPost, post, {
+      useFindAndModify: false,
+    }).session(session);
+    // COMMIT TRANSACTION
+    await session.commitTransaction();
+    session.endSession();
+    return res.status(200).json(oResponse(1, { postUpdated }));
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    return res.status(400).json(oResponse(0, error));
+  }
 };

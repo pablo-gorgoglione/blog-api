@@ -1,117 +1,121 @@
 const mongoose = require('mongoose');
-const Comment = require('../models/CommentModel');
 const ObjectId = require('mongodb').ObjectId;
-const oResponse = require('../lib/response').sendResponse;
 // extra
 const User = require('../models/UserModel');
 const Post = require('../models/PostModel');
-
-// function to create the object Comment
-function createComment(userId, postId, content, commentParentId) {
-  if (commentParentId == false) {
-    const newComment = new Comment({
-      user: userId,
-      postId: postId,
-      content: content,
-    });
-    return newComment;
-  } else {
-    const newComment = new Comment({
-      user: userId,
-      postId: postId,
-      commentParentId: commentParentId,
-      content: content,
-    });
-    return newComment;
-  }
-}
+const Comment = require('../models/CommentModel');
+const oResponse = require('../lib/response').sendResponse;
 
 exports.createOne = async (req, res, next) => {
-  // assign the necessary ids
+  //CREATE IDS
   let user_id = new ObjectId(req.user.id);
   let post_id = new ObjectId(req.params.idPost);
   let content = req.body.content;
-  if (req.params.idComment) {
-    //If it is a comment of a comment
-    let commentParent_id = new ObjectId(req.params.idComment);
 
-    // create the comment object
-    newComment = createComment(user_id, post_id, commentParent_id, content);
+  // START TRANSACTION
+  const session = await mongoose.startSession();
+  session.startTransaction();
 
-    //save the to the DB
-    try {
-      const comments = await newComment.save(newComment);
-      return res.status(200).json(oResponse(1, data));
-    } catch (err) {
-      return res.status(500).json(oResponse(0, err));
+  try {
+    // CREATE COMMENT ON SESSION
+    const comment = await Comment.create([
+      { user: user_id, postId: post_id, content: content },
+    ]);
+
+    // FIND THE TARGET POST
+    const findPost = await Post.findById(post_id);
+    if (!findPost) {
+      await session.abortTransaction();
+      session.endSession();
+      return res.status(400).json(oResponse(0, 'post does not exist'));
     }
-  } else {
-    // If it is a comment of a post
-    newComment = createComment(user_id, post_id, content, false);
 
-    try {
-      let idPost = req.params.idPost;
-      const data = await newComment.save(newComment);
-
-      /* update post's commentCounter */
-      const findPost = await Post.findById(idPost);
-      if (!findPost) {
-        return res.status(400).json(oResponse(0, 'post does not exist'));
-      }
-      findPost.commentCounter = findPost.commentCounter + 1;
-
-      const updatePost = await Post.findByIdAndUpdate(idPost, findPost, {
-        useFindAndModify: false,
-      });
-      if (!updatePost) {
-        return res.status(500).json(oResponse(0, 'Cannot update the post'));
-      }
-
-      return res
-        .status(201)
-        .json(oResponse(1, { commentCounter: updatePost.commentCounter }));
-    } catch (err) {
-      return res.status(400).json(oResponse(0, err));
+    // UPDATE POST DATA (commentCounter) ON SESSION
+    findPost.commentCounter = findPost.commentCounter + 1;
+    const updatePost = await Post.findByIdAndUpdate(findPost._id, findPost, {
+      useFindAndModify: false,
+    }).session(session);
+    if (!updatePost) {
+      await session.abortTransaction();
+      session.endSession();
+      return res.status(500).json(oResponse(0, 'Cannot update the post'));
     }
+
+    // COMMIT TRANSACTION
+    await session.commitTransaction();
+    session.endSession();
+    return res.status(201).json(
+      oResponse(1, {
+        commentCounter: findPost.commentCounter,
+        idComment: comment[0]._id,
+      })
+    );
+  } catch (err) {
+    await session.abortTransaction();
+    session.endSession();
+    return res.status(400).json(oResponse(0, err));
   }
 };
 
 exports.deleteOne = async (req, res, next) => {
   let id = req.params.idComment;
-  let user_id = new ObjectId(req.user.id);
-  let idPost = req.params.idPost;
+  let post_id = req.params.idPost;
 
+  // START TRANSACTION
+  const session = await mongoose.startSession();
+  session.startTransaction();
   try {
-    const findComment = await Comment.findById(id);
-    if (findComment) {
-      if (findComment.user.toString() == user_id.toString()) {
-        deletedComment = await Comment.findByIdAndDelete(id);
-        if (deletedComment) {
-          /* update post's commentCounter */
-          const findPost = await Post.findById(idPost);
-          if (!findPost) {
-            return res.status(400).json(oResponse(0, 'post does not exist'));
-          }
-          findPost.commentCounter = findPost.commentCounter - 1;
-          const updatePost = await Post.findByIdAndUpdate(idPost, findPost, {
-            useFindAndModify: false,
-          });
-
-          if (!updatePost) {
-            return res.status(500).json(oResponse(0, 'Cannot update the post'));
-          }
-
-          return res
-            .status(200)
-            .json(oResponse(1, { commentCounter: updatePost.commentCounter }));
-        }
-        return res.status(500).json(oResponse(0, ''));
-      }
-      return res.send(oResponse(0, 'You can only delete your comments'));
+    // FIND THE TARGET POST
+    const findComment = await Comment.findById(req.params.idComment);
+    if (!findComment) {
+      await session.abortTransaction();
+      session.endSession();
+      return res.status(404).json(oResponse(0, 'Comment not found'));
     }
-    return res.json(oResponse(0, 'Comment not found'));
-  } catch (err) {
-    return res.json(oResponse(0, err));
+
+    // VALIDATE THAT THE USER IS THE AUTHOR OF THE COMMENT
+    if (!findComment.user == req.user.id) {
+      await session.abortTransaction();
+      session.endSession();
+      return res
+        .status(401)
+        .send(oResponse(0, 'You can only delete your own comments'));
+    }
+
+    // DELETE COMMENT ON SESSION
+    await Comment.findByIdAndDelete(id).session(session);
+
+    // FIND THE TARGET POST
+    const findPost = await Post.findById(post_id);
+    if (!findPost) {
+      await session.abortTransaction();
+      session.endSession();
+      return res.status(400).json(oResponse(0, 'post does not exist'));
+    }
+
+    // UPDATE POST DATA (commentCounter) ON SESSION
+    findPost.commentCounter = findPost.commentCounter - 1;
+    const updatePost = await Post.findByIdAndUpdate(findPost._id, findPost, {
+      useFindAndModify: false,
+    }).session(session);
+    if (!updatePost) {
+      await session.abortTransaction();
+      session.endSession();
+      return res.status(500).json(oResponse(0, 'Cannot update the post'));
+    }
+
+    // COMMIT TRANSACTION
+    await session.commitTransaction();
+    session.endSession();
+    return res.status(200).json(
+      oResponse(1, {
+        commentCounter: findPost.commentCounter,
+      })
+    );
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    return res.status(500).json(oResponse(0, error));
   }
 };
 

@@ -12,17 +12,17 @@ const { initialPosts, testUser } = require('./helpers');
 var lengthCounter = initialPosts.length;
 var token = '';
 var postId = '';
+var postIdDelete = '';
 var commentIdDelete = '';
 var commentId = '';
-var posts = 0;
 var commentLikeCounter = 0;
 var postLikeCounter = 0;
 var userLikedPosts = 0;
 var userLikedComments = 0;
 var comments = 0;
 
-/* ---------- TEST ---------- */
 const api = supertest(app);
+/* ---------- TEST ---------- */
 
 beforeAll(async () => {
   await Comment.deleteMany({});
@@ -68,7 +68,7 @@ test('post 2 -there are some posts', async () => {
   expect(response.body.Data).toHaveLength(lengthCounter);
 });
 
-test('post 3 -adds 1  ', async () => {
+test('post 3 -add 2  ', async () => {
   const newPost = {
     title: 'Creando posts',
     content: 'test',
@@ -84,16 +84,66 @@ test('post 3 -adds 1  ', async () => {
     .expect('Content-Type', /application\/json/);
 
   postId = post.body.Data._id;
+  lengthCounter++;
+
+  const deletePost = {
+    title: 'this will be deleted',
+    content: 'testdelete',
+    tags: ['delete'],
+    isPublished: 1,
+  };
+
+  const postDel = await api
+    .post('/author/post')
+    .set('Authorization', token)
+    .send(deletePost)
+    .expect(201)
+    .expect('Content-Type', /application\/json/);
+
+  postIdDelete = postDel.body.Data._id;
+  lengthCounter++;
 
   const response = await api.get('/post').expect(200);
-  lengthCounter = lengthCounter + 1;
   expect(response.body.Data).toHaveLength(lengthCounter);
 
   const contents = response.body.Data.map((post) => post.content);
   expect(contents).toContain('test');
 });
 
-test('post 4 -with invalid format cant be added', async () => {
+test('post 4 -update ', async () => {
+  const updatedPost = {
+    title: 'updated post',
+    content: 'updated content',
+    tags: ['upt'],
+    isPublished: 1,
+  };
+  await api
+    .put(`/author/post/${postId}`)
+    .set('Authorization', token)
+    .send(updatedPost)
+    .expect(200)
+    .expect('Content-Type', /application\/json/);
+
+  const response = await api.get(`/post/${postId}`).expect(200);
+  expect(response.body.Data.content).toContain('updated content');
+  expect(response.body.Data.title).toContain('updated post');
+  expect(response.body.Data.tags[0]).toContain('upt');
+  expect(response.body.Data.isPublished).toBe(1);
+});
+
+test('post 5 -delete 1  ', async () => {
+  await api
+    .delete(`/author/post/${postIdDelete}`)
+    .set('Authorization', token)
+    .expect(200)
+    .expect('Content-Type', /application\/json/);
+  lengthCounter--;
+
+  const response = await api.get('/post').expect(200);
+  expect(response.body.Data).toHaveLength(lengthCounter);
+});
+
+test('post 6 -with invalid format cant be added', async () => {
   const newPost = {
     title: 'this shouldnt save title',
     //content
@@ -277,7 +327,6 @@ test('post plus -likeCounter is updated', async () => {
 
 test('user plus -likedPosts and likedComments is updated', async () => {
   const user = await api.get(`/user/`).set('Authorization', token).expect(200);
-  console.log(user.body.Data);
   expect(user.body.Data.likedPosts).toHaveLength(userLikedPosts);
   expect(user.body.Data.likedComments).toHaveLength(userLikedComments);
 });
