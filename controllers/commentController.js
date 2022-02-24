@@ -19,7 +19,7 @@ exports.createOne = async (req, res, next) => {
   try {
     // CREATE COMMENT ON SESSION
     const comment = await Comment.create([
-      { user: user_id, postId: post_id, content: content },
+      { user: user_id, postId: post_id, content: content, date: Date.now() },
     ]);
 
     // FIND THE TARGET POST
